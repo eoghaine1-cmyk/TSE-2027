@@ -1,0 +1,1005 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CitizenTally 2027 | Parallel Crowdsourced Election Tallying</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for Live Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#080C14',
+                            card: '#0F172A',
+                            border: '#1E293B',
+                            emerald: '#10B981',
+                            cyan: '#06B6D4',
+                            gold: '#F59E0B',
+                            crimson: '#EF4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #080C14;
+            color: #F8FAFC;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover {
+            transition: all 0.25s ease-in-out;
+        }
+
+        .glass-panel-hover:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15);
+        }
+
+        .glow-emerald {
+            box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080C14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+
+    <!-- Top Mandatory Statutory Disclaimer Banner -->
+    <div class="bg-amber-500/10 border-b border-amber-500/20 text-amber-300 text-xs sm:text-sm py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-amber-400 animate-pulse"></i>
+        <span><strong>LEGAL DISCLAIMER:</strong> Unofficial Crowdsourced Data Platform. Only the Independent National Electoral Commission (INEC) has statutory authority to announce official election results in Nigeria.</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">CitizenTally</span>
+                    <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded ml-1">2027</span>
+                    <p class="text-[10px] text-slate-400 font-mono tracking-wider">SECURE ELECTION VERIFICATION</p>
+                </div>
+            </div>
+
+            <!-- Security Badges (Desktop) -->
+            <div class="hidden lg:flex items-center gap-3 bg-slate-900/80 border border-slate-800 rounded-full px-3 py-1.5 text-xs">
+                <span class="flex items-center gap-1.5 text-emerald-400 font-mono">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Cloudflare Edge Active
+                </span>
+                <span class="text-slate-700">|</span>
+                <span class="text-slate-400 font-mono flex items-center gap-1">
+                    <i class="fa-solid fa-shield-halved text-cyan-400"></i> ZK-Proof Hash Security
+                </span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center gap-1">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                    <i class="fa-solid fa-chart-pie mr-1.5"></i> Dashboard
+                </button>
+                <button onclick="switchTab('exit-poll')" id="nav-exit-poll" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-box-archive mr-1.5"></i> Exit Poll Form
+                </button>
+                <button onclick="switchTab('ec8a-upload')" id="nav-ec8a-upload" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-file-contract mr-1.5"></i> EC8A Scanner
+                </button>
+                <button onclick="switchTab('security')" id="nav-security" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-lock mr-1.5"></i> Methodology
+                </button>
+            </nav>
+
+            <!-- Mobile Menu Toggle -->
+            <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="md:hidden text-slate-300 hover:text-white p-2">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 space-y-2">
+            <button onclick="switchTab('dashboard')" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-emerald-400 bg-emerald-500/10">
+                <i class="fa-solid fa-chart-pie mr-2"></i> Dashboard
+            </button>
+            <button onclick="switchTab('exit-poll')" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-box-archive mr-2"></i> Exit Poll Form
+            </button>
+            <button onclick="switchTab('ec8a-upload')" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-file-contract mr-2"></i> EC8A Scanner
+            </button>
+            <button onclick="switchTab('security')" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-lock mr-2"></i> Security Architecture
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- ================= TAB 1: LIVE DASHBOARD ================= -->
+        <section id="tab-dashboard" class="tab-content space-y-8">
+            
+            <!-- Hero Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-emerald-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Total Tally Submissions</p>
+                            <h3 class="text-3xl font-black text-white mt-1 font-mono" id="stat-total-votes">1,482,910</h3>
+                            <span class="text-xs text-emerald-400 font-medium flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-arrow-trend-up"></i> +12,450 last hour
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 text-xl">
+                            <i class="fa-solid fa-check-to-slot"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-cyan-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Polling Units Covered</p>
+                            <h3 class="text-3xl font-black text-white mt-1 font-mono">112,840</h3>
+                            <span class="text-xs text-cyan-400 font-medium flex items-center gap-1 mt-1">
+                                63.8% of 176,846 total PUs
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400 text-xl">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-amber-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Verified EC8A Sheets</p>
+                            <h3 class="text-3xl font-black text-white mt-1 font-mono">48,219</h3>
+                            <span class="text-xs text-amber-400 font-medium flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-shield-check"></i> OCR Cross-Checked
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 text-xl">
+                            <i class="fa-solid fa-file-circle-check"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-rose-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-mono text-slate-400 uppercase tracking-wider">Flagged Discrepancies</p>
+                            <h3 class="text-3xl font-black text-white mt-1 font-mono text-rose-400">142</h3>
+                            <span class="text-xs text-rose-400/80 font-medium flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Under Review by Watchdogs
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 text-xl">
+                            <i class="fa-solid fa-bug"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presidential Tally Chart Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Main National Vote Chart -->
+                <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-emerald-400"></i>
+                                Presidential Exit Poll Standings (National Aggregate)
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Updated live from encrypted citizen submissions</p>
+                        </div>
+                        <button onclick="refreshTallyData()" class="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-mono transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate text-emerald-400" id="refresh-icon"></i> Refresh Feeds
+                        </button>
+                    </div>
+
+                    <!-- Visual Progress Bar Breakdown -->
+                    <div class="space-y-4 pt-2" id="party-progress-list">
+                        <!-- JS injected dynamic bars -->
+                    </div>
+
+                    <!-- Canvas for Bar Chart Visualization -->
+                    <div class="pt-4 h-64 relative">
+                        <canvas id="presidentialChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- State & Regional Breakdown Selector -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-earth-africa text-cyan-400"></i>
+                            Regional Breakdown
+                        </h3>
+                        <p class="text-xs text-slate-400">Filter exit poll tallies by state</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-2">SELECT NIGERIAN STATE</label>
+                        <select id="state-dashboard-filter" onchange="updateStateBreakdown()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-emerald-500 transition">
+                            <option value="ALL">All States (Nationwide)</option>
+                            <option value="Lagos">Lagos State</option>
+                            <option value="Kano">Kano State</option>
+                            <option value="Rivers">Rivers State</option>
+                            <option value="Anambra">Anambra State</option>
+                            <option value="Kaduna">Kaduna State</option>
+                            <option value="Oyo">Oyo State</option>
+                            <option value="FCT">FCT Abuja</option>
+                        </select>
+                    </div>
+
+                    <!-- State Specific Stats Display -->
+                    <div id="state-summary-card" class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                            <span class="text-xs text-slate-400">Selected Territory:</span>
+                            <span class="text-sm font-bold text-emerald-400" id="selected-state-name">Nationwide</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between text-slate-300">
+                                <span>Total Submissions:</span>
+                                <span class="font-mono font-bold text-white" id="state-total-votes">1,482,910</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>Leading Candidate:</span>
+                                <span class="font-bold text-emerald-400" id="state-leader">LP (41.2%)</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>PU Reporting Rate:</span>
+                                <span class="font-mono text-cyan-400" id="state-reporting-rate">63.8%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fast Call to Action -->
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-950/60 to-cyan-950/60 border border-emerald-500/30 text-center space-y-3">
+                        <i class="fa-solid fa-hand-pointer text-emerald-400 text-2xl animate-bounce"></i>
+                        <h4 class="text-sm font-bold text-white">Have you cast your vote?</h4>
+                        <p class="text-xs text-slate-300">Submit your anonymous vote selection to help strengthen crowdsourced data verification.</p>
+                        <button onclick="switchTab('exit-poll')" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition glow-emerald">
+                            Log Anonymous Vote Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: EXIT POLL SUBMISSION FORM ================= -->
+        <section id="tab-exit-poll" class="tab-content hidden max-w-3xl mx-auto">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+                
+                <div class="border-b border-slate-800 pb-5">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold mb-2">
+                        <i class="fa-solid fa-lock"></i> 100% End-to-End Anonymous
+                    </div>
+                    <h2 class="text-2xl font-black text-white">Submit Exit Poll Selection</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-1">
+                        Record the party you voted for in the 2027 elections. No names, emails, or phone numbers are ever stored.
+                    </p>
+                </div>
+
+                <form id="vote-form" onsubmit="handleVoteSubmit(event)" class="space-y-6">
+                    
+                    <!-- Location Dropdown Hierarchy -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">1</span> 
+                            Select Polling Unit Location
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">State</label>
+                                <select id="vote-state" required onchange="populateLGAs()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="">Select State</option>
+                                    <option value="Lagos">Lagos</option>
+                                    <option value="Kano">Kano</option>
+                                    <option value="Rivers">Rivers</option>
+                                    <option value="Anambra">Anambra</option>
+                                    <option value="FCT">FCT Abuja</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Local Government Area (LGA)</label>
+                                <select id="vote-lga" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="">Select State First</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Polling Unit Code or Name</label>
+                            <input type="text" id="vote-pu-code" placeholder="e.g. PU: 24-01-08-012 (Alausa Ward / Open Space)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder-slate-500 font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Party Choice Selection -->
+                    <div class="space-y-4 pt-2">
+                        <h3 class="text-sm font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">2</span> 
+                            Select Party Voted For
+                        </h3>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="party-selection-grid">
+                            <!-- Party Buttons -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="APC" required class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-cyan-600 text-white font-black text-xs flex items-center justify-center">APC</span>
+                                    <span class="font-bold text-sm">APC</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="LP" class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center">LP</span>
+                                    <span class="font-bold text-sm">LP</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="PDP" class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center">PDP</span>
+                                    <span class="font-bold text-sm">PDP</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="NNPP" class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-amber-600 text-white font-black text-xs flex items-center justify-center">NNPP</span>
+                                    <span class="font-bold text-sm">NNPP</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="APGA" class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-purple-600 text-white font-black text-xs flex items-center justify-center">APGA</span>
+                                    <span class="font-bold text-sm">APGA</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="party_choice" value="OTHERS" class="peer sr-only">
+                                <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-white hover:bg-slate-800/80 transition flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-slate-700 text-white font-black text-xs flex items-center justify-center">OTH</span>
+                                    <span class="font-bold text-sm">Others</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Anti-Spam Security Shield Check -->
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-cat text-cyan-400"></i> Sybil Defense & Bot Protection
+                            </span>
+                            <span class="text-[10px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded font-mono border border-cyan-800">
+                                Hardware Fingerprint Hash
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                            <input type="checkbox" id="turnstile-check" required class="w-5 h-5 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-emerald-500 focus:ring-offset-slate-900">
+                            <label for="turnstile-check" class="text-xs text-slate-300 cursor-pointer">
+                                I verify I am physically present at this Polling Unit and casting a genuine record.
+                            </label>
+                        </div>
+                        <div class="text-[11px] font-mono text-slate-500 truncate" id="simulated-device-hash">
+                            Device Security Hash: 0x8f2a...e914 (Zero Personal Info Extracted)
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submit-vote-btn" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-sm uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Encrypted Ballot Tally
+                    </button>
+                </form>
+
+                <!-- Receipt Modal / Box (Hidden by default) -->
+                <div id="vote-receipt-box" class="hidden bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-6 space-y-4 animate-fade-in">
+                    <div class="flex items-center gap-3 text-emerald-400">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white">Exit Poll Vote Successfully Logged!</h4>
+                            <p class="text-xs text-emerald-300/80">Your entry has been cryptographically hashed into the live tally dataset.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs space-y-2 border border-slate-800">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Receipt Hash Code:</span>
+                            <span class="text-emerald-400 font-bold" id="receipt-hash">0x4F92...B78A</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Timestamp:</span>
+                            <span class="text-white" id="receipt-time">2027-02-27 14:22:01 UTC</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Selected Candidate:</span>
+                            <span class="text-cyan-400 font-bold" id="receipt-party">LP</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="switchTab('dashboard')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition">
+                            Return to Dashboard
+                        </button>
+                        <button onclick="resetVoteForm()" class="flex-1 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30 font-bold text-xs transition">
+                            Submit Another Unit
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: EC8A FORM UPLOADER & OCR SCANNER ================= -->
+        <section id="tab-ec8a-upload" class="tab-content hidden max-w-4xl mx-auto space-y-8">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl sm:text-3xl font-black text-white">EC8A Result Sheet Scanner & Cross-Checker</h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-2xl mx-auto">
+                    Citizen observers can upload clear photos of official signed EC8A result sheets posted at Polling Units. Our simulated AI OCR parses candidate figures and cross-checks with exit polls.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                
+                <!-- Upload Drop Zone -->
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-cyan-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Signed EC8A Form
+                    </h3>
+
+                    <!-- Drag and Drop Box -->
+                    <div id="drop-zone" onclick="triggerFileUpload()" class="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl p-8 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900 transition space-y-3">
+                        <input type="file" id="ec8a-file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                        
+                        <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl mx-auto">
+                            <i class="fa-solid fa-file-image"></i>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm font-bold text-white">Click or drag & drop EC8A photo here</p>
+                            <p class="text-xs text-slate-400 mt-1">Supports JPG, PNG, WEBP (Max 15MB)</p>
+                        </div>
+
+                        <span class="inline-block px-3 py-1 rounded-full bg-slate-800 text-[11px] font-mono text-slate-300">
+                            Must clearly show Polling Unit Stamp & INEC Presiding Officer Signature
+                        </span>
+                    </div>
+
+                    <!-- Preset Demo Form Selector -->
+                    <div class="pt-2">
+                        <p class="text-xs font-mono text-slate-400 mb-2">OR TRY DEMO EC8A FORM:</p>
+                        <div class="flex gap-2">
+                            <button onclick="simulateOCRScan('clean')" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition">
+                                Demo 1: Matching Result
+                            </button>
+                            <button onclick="simulateOCRScan('discrepancy')" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-rose-300 transition">
+                                Demo 2: Flagged Discrepancy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI OCR Analysis Panel -->
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> AI Vision Parse Results
+                    </h3>
+
+                    <!-- Status Display Box -->
+                    <div id="ocr-idle-state" class="text-center py-12 text-slate-500 space-y-2">
+                        <i class="fa-solid fa-magnifying-glass text-4xl text-slate-700"></i>
+                        <p class="text-sm">Upload an EC8A image or select a demo file to simulate real-time optical scanning.</p>
+                    </div>
+
+                    <!-- OCR Scanning Animation (Hidden initially) -->
+                    <div id="ocr-loading-state" class="hidden text-center py-12 space-y-4">
+                        <div class="inline-block animate-spin w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full"></div>
+                        <p class="text-xs font-mono text-cyan-400 animate-pulse">
+                            PARSING TEXT STAMPS & NUMERIC TALLIES FROM EC8A SHEET...
+                        </p>
+                    </div>
+
+                    <!-- OCR Results Output Box -->
+                    <div id="ocr-result-box" class="hidden space-y-4">
+                        
+                        <!-- Match Status Banner -->
+                        <div id="ocr-status-banner" class="p-3.5 rounded-xl flex items-center gap-3 text-xs font-bold">
+                            <!-- JS injected banner styling -->
+                        </div>
+
+                        <!-- Extracted Data Table -->
+                        <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-3 font-mono text-xs">
+                            <div class="flex justify-between text-slate-400 border-b border-slate-800 pb-2">
+                                <span>Detected Polling Unit:</span>
+                                <span class="text-white font-bold" id="ocr-pu-code">PU: 24-01-08-012</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <p class="text-[11px] text-slate-400 uppercase">Parsed Candidate Figures vs. Crowdsourced Exit Poll:</p>
+                                
+                                <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                                    <span class="text-slate-300">APC</span>
+                                    <span class="text-white font-bold" id="ocr-apc">142 votes</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                                    <span class="text-slate-300">LP</span>
+                                    <span class="text-emerald-400 font-bold" id="ocr-lp">318 votes</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                                    <span class="text-slate-300">PDP</span>
+                                    <span class="text-white font-bold" id="ocr-pdp">89 votes</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="resetOCR()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+                            Scan Another Document
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: SECURITY & METHODOLOGY ================= -->
+        <section id="tab-security" class="tab-content hidden max-w-4xl mx-auto space-y-8">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl sm:text-3xl font-black text-white">Security Architecture & Privacy Safeguards</h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-2xl mx-auto">
+                    How CitizenTally protects voter identity while maintaining tamper-proof crowdsourced election verification.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Security Card 1 -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 glass-panel-hover">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Zero-Knowledge Anonymity</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        No phone numbers, emails, names, or raw IP addresses are ever saved. Requests pass through Cloudflare Edge workers that strip network identifiers before payload storage.
+                    </p>
+                </div>
+
+                <!-- Security Card 2 -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 glass-panel-hover">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-fingerprint"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Sybil Attack & Bot Defense</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        To prevent script spamming and double voting, we generate an encrypted, client-side hardware fingerprint combined with Cloudflare Turnstile CAPTCHA checks.
+                    </p>
+                </div>
+
+                <!-- Security Card 3 -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 glass-panel-hover">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-shield-virus"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">DDoS & State-Level Resistance</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Hosted on static multi-region edge networks with automated Web Application Firewalls (WAF) to remain online even during peak election traffic surges or targeted DDoS attacks.
+                    </p>
+                </div>
+
+                <!-- Security Card 4 -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 glass-panel-hover">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl mb-2">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Independent Verification Pipeline</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Exit poll tallies are cross-referenced with crowdsourced EC8A result sheets uploaded by field observers to detect and flag regional data anomalies.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-slate-800 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-3">
+            <div class="flex items-center justify-center gap-2 text-xs font-mono text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>CitizenTally 2027 Open Crowdsourced System</span>
+                <span class="text-slate-600">•</span>
+                <span class="text-slate-400">Non-Partisan Civic Tech Initiative</span>
+            </div>
+            <p class="text-[11px] text-slate-400 max-w-xl mx-auto">
+                Designed for civic transparency during Nigerian General Elections. Data published here is derived from crowdsourced exit polls and public EC8A form uploads.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic & Chart Engine -->
+    <script>
+        // Default Mock Tally Data
+        let tallyData = {
+            LP: 610959,
+            APC: 474531,
+            PDP: 281753,
+            NNPP: 88974,
+            APGA: 26693,
+            OTHERS font: 0
+        };
+
+        const partyColors = {
+            LP: '#10B981',    // Emerald Green
+            APC: '#06B6D4',   // Cyan Blue
+            PDP: '#F43F5E',   // Crimson Rose
+            NNPP: '#F59E0B',  // Amber Gold
+            APGA: '#A855F7',  // Purple
+            OTHERS: '#64748B' // Slate Gray
+        };
+
+        const stateLGAs = {
+            "Lagos": ["Ikeja", "Alausa", "Eti-Osa", "Ikorodu", "Surulere", "Badagry"],
+            "Kano": ["Kano Municipal", "Dala", "Gwale", "Fagge", "Nasarawa"],
+            "Rivers": ["Port Harcourt", "Obio-Akpor", "Eleme", "Oyigbo"],
+            "Anambra": ["Awka South", "Onitsha North", "Nnewi North", "Aguata"],
+            "FCT": ["Abuja Municipal (AMAC)", "Bwari", "Gwagwalada", "Kuje"]
+        };
+
+        let presChartInstance = null;
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            initChart();
+            renderPartyProgress();
+            generateDeviceHash();
+        };
+
+        // Tab Switching Engine
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            // Reset navigation active styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-400', 'bg-emerald-500/10', 'border', 'border-emerald-500/20');
+                btn.classList.add('text-slate-300');
+            });
+
+            // Set active navigation button style
+            const activeNav = document.getElementById('nav-' + tabId);
+            if(activeNav) {
+                activeNav.classList.remove('text-slate-300');
+                activeNav.classList.add('text-emerald-400', 'bg-emerald-500/10', 'border', 'border-emerald-500/20');
+            }
+
+            // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('presidentialChart').getContext('2d');
+            
+            const total = Object.values(tallyData).reduce((a, b) => a + b, 0);
+            
+            presChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['LP', 'APC', 'PDP', 'NNPP', 'APGA'],
+                    datasets: [{
+                        label: 'Crowdsourced Votes',
+                        data: [tallyData.LP, tallyData.APC, tallyData.PDP, tallyData.NNPP, tallyData.APGA],
+                        backgroundColor: [
+                            partyColors.LP,
+                            partyColors.APC,
+                            partyColors.PDP,
+                            partyColors.NNPP,
+                            partyColors.APGA
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#F8FAFC', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Party Progress Bars in Dashboard
+        function renderPartyProgress() {
+            const container = document.getElementById('party-progress-list');
+            const total = Object.values(tallyData).reduce((a, b) => a + b, 0);
+            
+            let html = '';
+
+            const sorted = Object.entries(tallyData).sort((a,b) => b[1] - a[1]);
+
+            sorted.forEach(([party, count]) => {
+                if(party === 'OTHERS' && count === 0) return;
+                const pct = ((count / total) * 100).toFixed(1);
+                
+                html += `
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${partyColors[party]}"></span>
+                                <span class="text-white">${party}</span>
+                            </span>
+                            <span class="font-mono text-slate-300">${count.toLocaleString()} (${pct}%)</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-800">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${partyColors[party]}"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Refresh Data Feed Simulation
+        function refreshTallyData() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('animate-spin');
+
+            setTimeout(() => {
+                // Add small simulated incremental counts
+                tallyData.LP += Math.floor(Math.random() * 150) + 50;
+                tallyData.APC += Math.floor(Math.random() * 120) + 40;
+                tallyData.PDP += Math.floor(Math.random() * 90) + 20;
+
+                const total = Object.values(tallyData).reduce((a, b) => a + b, 0);
+                document.getElementById('stat-total-votes').innerText = total.toLocaleString();
+
+                if(presChartInstance) {
+                    presChartInstance.data.datasets[0].data = [
+                        tallyData.LP, tallyData.APC, tallyData.PDP, tallyData.NNPP, tallyData.APGA
+                    ];
+                    presChartInstance.update();
+                }
+
+                renderPartyProgress();
+                icon.classList.remove('animate-spin');
+            }, 600);
+        }
+
+        // State Filter Update in Dashboard
+        function updateStateBreakdown() {
+            const state = document.getElementById('state-dashboard-filter').value;
+            const nameEl = document.getElementById('selected-state-name');
+            const votesEl = document.getElementById('state-total-votes');
+            const leaderEl = document.getElementById('state-leader');
+            const rateEl = document.getElementById('state-reporting-rate');
+
+            if(state === 'ALL') {
+                nameEl.innerText = 'Nationwide';
+                votesEl.innerText = '1,482,910';
+                leaderEl.innerText = 'LP (41.2%)';
+                rateEl.innerText = '63.8%';
+            } else if(state === 'Lagos') {
+                nameEl.innerText = 'Lagos State';
+                votesEl.innerText = '284,110';
+                leaderEl.innerText = 'LP (52.4%)';
+                rateEl.innerText = '78.1%';
+            } else if(state === 'Kano') {
+                nameEl.innerText = 'Kano State';
+                votesEl.innerText = '312,900';
+                leaderEl.innerText = 'NNPP (48.1%)';
+                rateEl.innerText = '71.4%';
+            } else if(state === 'Anambra') {
+                nameEl.innerText = 'Anambra State';
+                votesEl.innerText = '198,400';
+                leaderEl.innerText = 'LP (84.6%)';
+                rateEl.innerText = '82.0%';
+            } else {
+                nameEl.innerText = state + ' State';
+                votesEl.innerText = '115,200';
+                leaderEl.innerText = 'APC (44.2%)';
+                rateEl.innerText = '58.5%';
+            }
+        }
+
+        // Populate LGAs dynamically based on state choice
+        function populateLGAs() {
+            const stateSelect = document.getElementById('vote-state').value;
+            const lgaSelect = document.getElementById('vote-lga');
+
+            lgaSelect.innerHTML = '<option value="">Select LGA</option>';
+
+            if(stateSelect && stateLGAs[stateSelect]) {
+                stateLGAs[stateSelect].forEach(lga => {
+                    const opt = document.createElement('option');
+                    opt.value = lga;
+                    opt.innerText = lga;
+                    lgaSelect.appendChild(opt);
+                });
+            }
+        }
+
+        // Generate Fake Hardware Hash for Demo
+        function generateDeviceHash() {
+            const randomHex = Array.from({length: 16}, () => Math.floor(Math.random()*16).toString(16)).join('');
+            document.getElementById('simulated-device-hash').innerText = `Device Security Hash: 0x${randomHex}... (Zero Identity Logs Recorded)`;
+        }
+
+        // Handle Vote Submission
+        function handleVoteSubmit(event) {
+            event.preventDefault();
+
+            const partyChoice = document.querySelector('input[name="party_choice"]:checked').value;
+            const state = document.getElementById('vote-state').value;
+            
+            // Increment local tally
+            if(tallyData[partyChoice] !== undefined) {
+                tallyData[partyChoice] += 1;
+            }
+
+            // Update receipt details
+            const hash = '0x' + Array.from({length: 12}, () => Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
+            document.getElementById('receipt-hash').innerText = hash;
+            document.getElementById('receipt-party').innerText = partyChoice;
+            document.getElementById('receipt-time').innerText = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+            // Show receipt box
+            document.getElementById('vote-form').classList.add('hidden');
+            document.getElementById('vote-receipt-box').classList.remove('hidden');
+
+            // Refresh UI chart
+            refreshTallyData();
+        }
+
+        function resetVoteForm() {
+            document.getElementById('vote-form').reset();
+            document.getElementById('vote-form').classList.remove('hidden');
+            document.getElementById('vote-receipt-box').classList.add('hidden');
+        }
+
+        // OCR Simulation Functions
+        function triggerFileUpload() {
+            document.getElementById('ec8a-file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            if(event.target.files.length > 0) {
+                simulateOCRScan('clean');
+            }
+        }
+
+        function simulateOCRScan(mode) {
+            document.getElementById('ocr-idle-state').classList.add('hidden');
+            document.getElementById('ocr-result-box').classList.add('hidden');
+            document.getElementById('ocr-loading-state').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('ocr-loading-state').classList.add('hidden');
+                document.getElementById('ocr-result-box').classList.remove('hidden');
+
+                const banner = document.getElementById('ocr-status-banner');
+
+                if(mode === 'clean') {
+                    banner.className = "p-3.5 rounded-xl flex items-center gap-3 text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+                    banner.innerHTML = `<i class="fa-solid fa-circle-check text-lg"></i> <span>TALLY MATCH: EC8A numbers match exit poll range within 98.4% confidence interval.</span>`;
+                    
+                    document.getElementById('ocr-pu-code').innerText = "PU: 24-01-08-012 (Ikeja/Alausa)";
+                    document.getElementById('ocr-apc').innerText = "142 votes";
+                    document.getElementById('ocr-lp').innerText = "318 votes";
+                    document.getElementById('ocr-pdp').innerText = "89 votes";
+                } else {
+                    banner.className = "p-3.5 rounded-xl flex items-center gap-3 text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30";
+                    banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-lg"></i> <span>FLAGGED DISCREPANCY: Uploaded EC8A numbers deviate significantly (+420%) from exit poll submissions.</span>`;
+                    
+                    document.getElementById('ocr-pu-code').innerText = "PU: 18-04-02-005 (Obio-Akpor)";
+                    document.getElementById('ocr-apc').innerText = "840 votes (Over-voting detected)";
+                    document.getElementById('ocr-lp').innerText = "42 votes";
+                    document.getElementById('ocr-pdp').innerText = "15 votes";
+                }
+            }, 1200);
+        }
+
+        function resetOCR() {
+            document.getElementById('ocr-result-box').classList.add('hidden');
+            document.getElementById('ocr-idle-state').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
+```
